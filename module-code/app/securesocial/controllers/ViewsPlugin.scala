@@ -40,12 +40,12 @@ trait ViewTemplates {
   /**
    * Returns the html for the signup page
    */
-  def getSignUpPage(form: Form[RegistrationInfo], token: String)(implicit request: RequestHeader, lang: Lang): Html
+  def getSignUpPage()(implicit request: RequestHeader, lang: Lang): Html
 
   /**
    * Returns the html for the start signup page
    */
-  def getStartSignUpPage(form: Form[String])(implicit request: RequestHeader, lang: Lang): Html
+  def getStartSignUpPage(form: Form[RegistrationInfo])(implicit request: RequestHeader, lang: Lang): Html
 
   /**
    * Returns the html for the reset password page
@@ -141,11 +141,11 @@ object ViewTemplates {
       securesocial.views.html.login(form, msg)
     }
 
-    override def getSignUpPage(form: Form[RegistrationInfo], token: String)(implicit request: RequestHeader, lang: Lang): Html = {
-      securesocial.views.html.Registration.signUp(form, token)
+    override def getSignUpPage()(implicit request: RequestHeader, lang: Lang): Html = {
+      securesocial.views.html.Registration.signUp()
     }
 
-    override def getStartSignUpPage(form: Form[String])(implicit request: RequestHeader, lang: Lang): Html = {
+    override def getStartSignUpPage(form: Form[RegistrationInfo])(implicit request: RequestHeader, lang: Lang): Html = {
       securesocial.views.html.Registration.startSignUp(form)
     }
 

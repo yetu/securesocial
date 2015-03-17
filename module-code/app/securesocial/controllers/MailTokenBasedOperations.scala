@@ -49,15 +49,34 @@ abstract class MailTokenBasedOperations[U] extends SecureSocial[U] {
   /**
    * Creates a token for mail based operations
    *
-   * @param email the email address
    * @param isSignUp a boolean indicating if the token is used for a signup or password reset operation
    * @return a MailToken instance
    */
-  def createToken(email: String, isSignUp: Boolean): Future[MailToken] = {
+  def createToken(registrationInfo: RegistrationInfo, isSignUp: Boolean): Future[MailToken] = {
     val now = DateTime.now
 
     Future.successful(MailToken(
-      UUID.randomUUID().toString, email.toLowerCase, now, now.plusMinutes(TokenDuration), isSignUp = isSignUp
+      UUID.randomUUID().toString,
+      email = registrationInfo.email.toLowerCase,
+      now,
+      now.plusMinutes(TokenDuration),
+      isSignUp = isSignUp,
+      firstName = Some(registrationInfo.firstName),
+      lastName = Some(registrationInfo.lastName),
+      password = Some(registrationInfo.password),
+      userName = registrationInfo.userName
+    ))
+  }
+
+  def createPasswordResetToken(email: String, isSignUp: Boolean): Future[MailToken] = {
+    val now = DateTime.now
+
+    Future.successful(MailToken(
+      UUID.randomUUID().toString,
+      email = email.toLowerCase,
+      creationTime = now,
+      expirationTime = now.plusMinutes(TokenDuration),
+      isSignUp = isSignUp
     ))
   }
 

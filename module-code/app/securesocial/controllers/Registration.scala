@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package securesocial.controllers
 
 import play.api.data.Forms._
 import play.api.data._
+import play.api.data.validation.Constraints._
 import play.api.i18n.Messages
 import play.filters.csrf._
 import play.api.mvc.Action
@@ -66,10 +67,13 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
         tuple(
           Password1 -> nonEmptyText.verifying(PasswordValidator.constraint),
           Password2 -> nonEmptyText
-        ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
+        ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
+      Email -> email.verifying(nonEmpty)
     ) // binding
-    ((userName, firstName, lastName, password) => RegistrationInfo(Some(userName), firstName, lastName, password._1)) // unbinding
-    (info => Some((info.userName.getOrElse(""), info.firstName, info.lastName, ("", ""))))
+    ((userName, firstName, lastName, password, email) => RegistrationInfo(Some(userName), firstName, lastName, password
+        ._1,
+        email)) // unbinding
+        (info => Some((info.userName.getOrElse(""), info.firstName, info.lastName, ("", ""), info.email)))
   )
 
   val formWithoutUsername = Form[RegistrationInfo](
@@ -80,10 +84,12 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
         tuple(
           Password1 -> nonEmptyText.verifying(PasswordValidator.constraint),
           Password2 -> nonEmptyText
-        ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
+        ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
+      Email -> email.verifying(nonEmpty)
     ) // binding
-    ((firstName, lastName, password) => RegistrationInfo(None, firstName, lastName, password._1)) // unbinding
-    (info => Some((info.firstName, info.lastName, ("", ""))))
+    ((firstName, lastName, password, email) => RegistrationInfo(None, firstName, lastName, password._1, email)) //
+    // unbinding
+    (info => Some((info.firstName, info.lastName, ("", ""), info.email)))
   )
 
   val form = if (UsernamePasswordProvider.withUserNameSupport) formWithUsername else formWithoutUsername
@@ -95,9 +101,9 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
     Action {
       implicit request =>
         if (SecureSocial.enableRefererAsOriginalUrl) {
-          SecureSocial.withRefererAsOriginalUrl(Ok(env.viewTemplates.getStartSignUpPage(startForm)))
+          SecureSocial.withRefererAsOriginalUrl(Ok(env.viewTemplates.getStartSignUpPage(formWithoutUsername)))
         } else {
-          Ok(env.viewTemplates.getStartSignUpPage(startForm))
+          Ok(env.viewTemplates.getStartSignUpPage(formWithoutUsername))
         }
     }
   }
@@ -105,12 +111,12 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
   def handleStartSignUp = CSRFCheck {
     Action.async {
       implicit request =>
-        startForm.bindFromRequest.fold(
+        form.bindFromRequest.fold(
           errors => {
             Future.successful(BadRequest(env.viewTemplates.getStartSignUpPage(errors)))
           },
-          e => {
-            val email = e.toLowerCase
+          (registrationInfo: RegistrationInfo) => {
+            val email = registrationInfo.email.toLowerCase
             // check if there is already an account for this email address
             env.userService.findByEmailAndProvider(email, UsernamePasswordProvider.UsernamePassword).map {
               maybeUser =>
@@ -119,7 +125,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
                     // user signed up already, send an email offering to login/recover password
                     env.mailer.sendAlreadyRegisteredEmail(user)
                   case None =>
-                    createToken(email, isSignUp = true).flatMap { token =>
+                    createToken(registrationInfo, isSignUp = true).flatMap { token =>
                       env.mailer.sendSignUpEmail(email, token.uuid)
                       env.userService.saveToken(token)
                     }
@@ -141,7 +147,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
         logger.debug("[securesocial] trying sign up with token %s".format(token))
         executeForToken(token, true, {
           _ =>
-            Future.successful(Ok(env.viewTemplates.getSignUpPage(form, token)))
+            Future.successful(Ok(env.viewTemplates.getSignUpPage()))
         })
     }
   }
@@ -154,55 +160,48 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
       implicit request =>
         executeForToken(token, true, {
           t =>
-            form.bindFromRequest.fold(
-              errors => {
-                logger.debug("[securesocial] errors " + errors)
-                Future.successful(BadRequest(env.viewTemplates.getSignUpPage(errors, t.uuid)))
-              },
-              info => {
-                val id = if (UsernamePasswordProvider.withUserNameSupport) info.userName.get else t.email
-                val newUser = BasicProfile(
-                  providerId,
-                  id,
-                  Some(info.firstName),
-                  Some(info.lastName),
-                  Some("%s %s".format(info.firstName, info.lastName)),
-                  Some(t.email),
-                  None,
-                  AuthenticationMethod.UserPassword,
-                  passwordInfo = Some(env.currentHasher.hash(info.password))
-                )
+            val id = if (UsernamePasswordProvider.withUserNameSupport) t.userName.get else t.email
+            val newUser = BasicProfile(
+              providerId,
+              id,
+              t.firstName,
+              t.lastName,
+              Some("%s %s".format(t.firstName, t.lastName)),
+              Some(t.email),
+              None,
+              AuthenticationMethod.UserPassword,
+              passwordInfo = t.password.map(pw => env.currentHasher.hash(pw))
+            )
 
-                val withAvatar = env.avatarService.map {
-                  _.urlFor(t.email).map { url =>
-                    if (url != newUser.avatarUrl) newUser.copy(avatarUrl = url) else newUser
-                  }
-                }.getOrElse(Future.successful(newUser))
+            val withAvatar = env.avatarService.map {
+              _.urlFor(t.email).map { url =>
+                if (url != newUser.avatarUrl) newUser.copy(avatarUrl = url) else newUser
+              }
+            }.getOrElse(Future.successful(newUser))
 
-                import securesocial.core.utils._
-                val result = for (
-                  toSave <- withAvatar;
-                  saved <- env.userService.save(toSave, SaveMode.SignUp);
-                  deleted <- env.userService.deleteToken(t.uuid)
-                ) yield {
-                  if (UsernamePasswordProvider.sendWelcomeEmail)
-                    env.mailer.sendWelcomeEmail(newUser)
-                  val eventSession = Events.fire(new SignUpEvent(saved)).getOrElse(request.session)
-                  if (UsernamePasswordProvider.signupSkipLogin) {
-                    env.authenticatorService.find(CookieAuthenticator.Id).map {
-                      _.fromUser(saved).flatMap { authenticator =>
-                        confirmationResult().flashing(Success -> Messages(SignUpDone)).startingAuthenticator(authenticator)
-                      }
-                    } getOrElse {
-                      logger.error(s"[securesocial] There isn't CookieAuthenticator registered in the RuntimeEnvironment")
-                      Future.successful(confirmationResult().flashing(Error -> Messages("There was an error signing you up")))
-                    }
-                  } else {
-                    Future.successful(confirmationResult().flashing(Success -> Messages(SignUpDone)).withSession(eventSession))
+            import securesocial.core.utils._
+            val result = for (
+              toSave <- withAvatar;
+              saved <- env.userService.save(toSave, SaveMode.SignUp);
+              deleted <- env.userService.deleteToken(t.uuid)
+            ) yield {
+              if (UsernamePasswordProvider.sendWelcomeEmail)
+                env.mailer.sendWelcomeEmail(newUser)
+              val eventSession = Events.fire(new SignUpEvent(saved)).getOrElse(request.session)
+              if (UsernamePasswordProvider.signupSkipLogin) {
+                env.authenticatorService.find(CookieAuthenticator.Id).map {
+                  _.fromUser(saved).flatMap { authenticator =>
+                    confirmationResult().flashing(Success -> Messages(SignUpDone)).startingAuthenticator(authenticator)
                   }
+                } getOrElse {
+                  logger.error(s"[securesocial] There isn't CookieAuthenticator registered in the RuntimeEnvironment")
+                  Future.successful(confirmationResult().flashing(Error -> Messages("There was an error signing you up")))
                 }
-                result.flatMap(f => f)
-              })
+              } else {
+                Future.successful(confirmationResult().flashing(Success -> Messages(SignUpDone)).withSession(eventSession))
+              }
+            }
+            result.flatMap(f => f)
         })
     }
   }
@@ -216,16 +215,12 @@ object BaseRegistration {
   val Password = "password"
   val Password1 = "password1"
   val Password2 = "password2"
+  val Email = "email"
 
   val PasswordsDoNotMatch = "securesocial.signup.passwordsDoNotMatch"
 }
 
 /**
  * The data collected during the registration process
- *
- * @param userName the username
- * @param firstName the first name
- * @param lastName the last name
- * @param password the password
  */
-case class RegistrationInfo(userName: Option[String], firstName: String, lastName: String, password: String)
+case class RegistrationInfo(userName: Option[String], firstName: String, lastName: String, password: String, email: String)
