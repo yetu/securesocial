@@ -126,8 +126,9 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
                     env.mailer.sendAlreadyRegisteredEmail(user)
                   case None =>
                     createToken(registrationInfo, isSignUp = true).flatMap { token =>
+                      val savedToken = env.userService.saveToken(token)
                       env.mailer.sendSignUpEmail(email, token.uuid)
-                      env.userService.saveToken(token)
+                      savedToken
                     }
                 }
                 handleStartResult().flashing(Success -> Messages(ThankYouCheckEmail), Email -> email)
