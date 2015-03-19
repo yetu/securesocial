@@ -48,6 +48,11 @@ trait ViewTemplates {
   def getStartSignUpPage(form: Form[RegistrationInfo])(implicit request: RequestHeader, lang: Lang): Html
 
   /**
+   * Returns the html for the confirmed signup page
+   */
+  def getConfirmedSignUpPage()(implicit request: RequestHeader, lang: Lang): Html
+
+  /**
    * Returns the html for the reset password page
    */
   def getResetPasswordPage(form: Form[(String, String)], token: String)(implicit request: RequestHeader, lang: Lang): Html
@@ -143,6 +148,10 @@ object ViewTemplates {
 
     override def getSignUpPage()(implicit request: RequestHeader, lang: Lang): Html = {
       securesocial.views.html.Registration.signUp()
+    }
+
+    override def getConfirmedSignUpPage()(implicit request: RequestHeader, lang: Lang): Html = {
+      securesocial.views.html.Registration.confirmedSignUp()
     }
 
     override def getStartSignUpPage(form: Form[RegistrationInfo])(implicit request: RequestHeader, lang: Lang): Html = {

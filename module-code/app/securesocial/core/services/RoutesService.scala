@@ -44,6 +44,11 @@ trait RoutesService {
   def signUpUrl(mailToken: String)(implicit req: RequestHeader): String
 
   /**
+   * The confirmed sign up page
+   */
+  def confirmedSignUpUrl(implicit req: RequestHeader): String
+
+  /**
    * The url that processes submissions from the sign up page
    */
   def handleSignUpUrl(mailToken: String)(implicit req: RequestHeader): String
@@ -120,6 +125,10 @@ object RoutesService {
 
     override def signUpUrl(mailToken: String)(implicit req: RequestHeader): String = {
       absoluteUrl(securesocial.controllers.routes.Registration.signUp(mailToken))
+    }
+
+    override def confirmedSignUpUrl(implicit req: RequestHeader): String = {
+      absoluteUrl(securesocial.controllers.routes.Registration.confirmedSignUp())
     }
 
     override def handleSignUpUrl(mailToken: String)(implicit req: RequestHeader): String = {

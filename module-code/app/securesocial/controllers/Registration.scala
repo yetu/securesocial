@@ -21,7 +21,7 @@ import play.api.data._
 import play.api.data.validation.Constraints._
 import play.api.i18n.Messages
 import play.filters.csrf._
-import play.api.mvc.Action
+import play.api.mvc.{ AnyContent, Request, Action }
 import securesocial.core._
 import securesocial.core.authenticator.CookieAuthenticator
 import securesocial.core.providers.UsernamePasswordProvider
@@ -108,6 +108,12 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
     }
   }
 
+  def confirmedSignUp = {
+    Action {
+      implicit request => Ok(env.viewTemplates.getConfirmedSignUpPage())
+    }
+  }
+
   def handleStartSignUp = CSRFCheck {
     Action.async {
       implicit request =>
@@ -156,7 +162,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
   /**
    * Handles posts from the sign up page
    */
-  def handleSignUp(token: String) = CSRFCheck {
+  def handleSignUp(token: String) = {
     Action.async {
       implicit request =>
         executeForToken(token, true, {
