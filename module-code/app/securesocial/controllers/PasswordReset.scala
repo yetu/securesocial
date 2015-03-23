@@ -110,7 +110,7 @@ trait BasePasswordReset[U] extends MailTokenBasedOperations[U] {
    *
    * @param token the token that identifies the user request
    */
-  def handleResetPassword(token: String) = CSRFCheck {
+  def handleResetPassword(token: String) = {
     Action.async { implicit request =>
       import scala.concurrent.ExecutionContext.Implicits.global
       executeForToken(token, false, {
