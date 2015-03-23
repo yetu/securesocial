@@ -1,7 +1,5 @@
 import bintray.Keys._
-import play.PlayImport.PlayKeys._
 import play.PlayScala
-import sbt._
 
 name := """securesocial"""
 
@@ -9,7 +7,7 @@ organization := "com.yetu"
 
 scalaVersion := "2.11.5"
 
-PlayKeys.generateRefReverseRouter := false
+//PlayKeys.generateRefReverseRouter := false
 
 libraryDependencies ++= Seq(
   cache,
@@ -30,10 +28,6 @@ resolvers ++= Seq(
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-publishMavenStyle := true
-
-
-pomIncludeRepository := { _ => false }
 
 
 scalacOptions := Seq("-encoding", "UTF-8", "-Xlint", "-deprecation", "-unchecked", "-feature")
@@ -51,9 +45,11 @@ javacOptions ++= Seq("-source", "1.6", "-target", "1.6", "-encoding", "UTF-8",  
 // sbt-release plugin settings:
 releaseSettings
 
-publishMavenStyle := true
+publishMavenStyle := false
 
 // settings for bintray publishing
+
+publishArtifact in (Test, packageBin) := true
 
 bintrayPublishSettings
 
