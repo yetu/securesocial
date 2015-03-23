@@ -45,7 +45,7 @@ javacOptions ++= Seq("-source", "1.6", "-target", "1.6", "-encoding", "UTF-8",  
 // sbt-release plugin settings:
 releaseSettings
 
-publishMavenStyle := false
+publishMavenStyle := true
 
 // settings for bintray publishing
 
