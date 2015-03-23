@@ -115,5 +115,10 @@ abstract class MailTokenBasedOperations[U] extends SecureSocial[U] {
    * @param request the current request
    * @return the action result
    */
-  protected def confirmationResult()(implicit request: RequestHeader): Result = Redirect(env.routes.confirmedSignUpUrl)
+  def confirmationResult(gatewayRegistration: Boolean = false)(implicit request: RequestHeader): Result = {
+    gatewayRegistration match {
+      case false => Redirect(env.routes.loginPageUrl)
+      case true => Redirect(env.routes.confirmedSignUpUrl)
+    }
+  }
 }

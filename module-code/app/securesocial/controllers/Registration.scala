@@ -205,7 +205,8 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
                   Future.successful(confirmationResult().flashing(Error -> Messages("There was an error signing you up")))
                 }
               } else {
-                Future.successful(confirmationResult().flashing(Success -> Messages(SignUpDone)).withSession(eventSession))
+//                TODO: handle gatewayRegistration parameter dynamically!
+                Future.successful(confirmationResult(gatewayRegistration = true).flashing(Success -> Messages(SignUpDone)).withSession(eventSession))
               }
             }
             result.flatMap(f => f)
