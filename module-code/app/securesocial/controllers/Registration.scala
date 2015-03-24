@@ -198,7 +198,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
               if (UsernamePasswordProvider.signupSkipLogin) {
                 env.authenticatorService.find(CookieAuthenticator.Id).map {
                   _.fromUser(saved).flatMap { authenticator =>
-                    confirmationResult().flashing(Success -> Messages(SignUpDone)).startingAuthenticator(authenticator)
+                    confirmationResult(gatewayRegistration = true).flashing(Success -> Messages(SignUpDone)).startingAuthenticator(authenticator)
                   }
                 } getOrElse {
                   logger.error(s"[securesocial] There isn't CookieAuthenticator registered in the RuntimeEnvironment")
