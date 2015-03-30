@@ -53,6 +53,8 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
   val UserName = "userName"
   val FirstName = "firstName"
   val LastName = "lastName"
+  val CheckNewsletter = "newsletter"
+  val CheckAgreement = "agreement"
 
   val formWithUsername = Form[RegistrationInfo](
     mapping(
@@ -68,12 +70,14 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
           Password1 -> nonEmptyText.verifying(PasswordValidator.constraint),
           Password2 -> nonEmptyText
         ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
-      Email -> email.verifying(nonEmpty)
+      Email -> email.verifying(nonEmpty),
+        CheckNewsletter -> boolean,
+      CheckAgreement -> boolean
     ) // binding
-    ((userName, firstName, lastName, password, email) => RegistrationInfo(Some(userName), firstName, lastName, password
+    ((userName, firstName, lastName, password, email, checkGetInfo, checkAgreement) => RegistrationInfo(Some(userName), firstName, lastName, password
         ._1,
-        email)) // unbinding
-        (info => Some((info.userName.getOrElse(""), info.firstName, info.lastName, ("", ""), info.email)))
+        email, checkGetInfo, checkAgreement)) // unbinding
+        (info => Some((info.userName.getOrElse(""), info.firstName, info.lastName, ("", ""), info.email, info.checkGetInfo, info.checkAgreement)))
   )
 
   val formWithoutUsername = Form[RegistrationInfo](
@@ -85,11 +89,13 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
           Password1 -> nonEmptyText.verifying(PasswordValidator.constraint),
           Password2 -> nonEmptyText
         ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
-      Email -> email.verifying(nonEmpty)
+      Email -> email.verifying(nonEmpty),
+      CheckNewsletter -> boolean,
+      CheckAgreement -> boolean
     ) // binding
-    ((firstName, lastName, password, email) => RegistrationInfo(None, firstName, lastName, password._1, email)) //
+    ((firstName, lastName, password, email, checkGetInfo, checkAgreement) => RegistrationInfo(None, firstName, lastName, password._1, email, checkGetInfo, checkAgreement)) //
     // unbinding
-    (info => Some((info.firstName, info.lastName, ("", ""), info.email)))
+    (info => Some((info.firstName, info.lastName, ("", ""), info.email, info.checkGetInfo, info.checkAgreement)))
   )
 
   val form = if (UsernamePasswordProvider.withUserNameSupport) formWithUsername else formWithoutUsername
@@ -122,25 +128,29 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
             Future.successful(BadRequest(env.viewTemplates.getStartSignUpPage(errors)))
           },
           (registrationInfo: RegistrationInfo) => {
-            val email = registrationInfo.email.toLowerCase
-            // check if there is already an account for this email address
-            env.userService.findByEmailAndProvider(email, UsernamePasswordProvider.UsernamePassword).map {
-              maybeUser =>
-                maybeUser match {
-                  case Some(user) =>
-                    // user signed up already, send an email offering to login/recover password
-                    env.mailer.sendAlreadyRegisteredEmail(user)
-                  case None =>
-                    createToken(registrationInfo, isSignUp = true).flatMap { token =>
-                      val savedToken = env.userService.saveToken(token)
-                      env.mailer.sendSignUpEmail(email, token.uuid)
-                      savedToken
-                    }
-                }
-                handleStartResult().flashing(Success -> Messages(ThankYouCheckEmail), Email -> email)
-            }
+            handleStartSignUpSuccess(registrationInfo: RegistrationInfo)
           }
         )
+    }
+  }
+
+  def handleStartSignUpSuccess(registrationInfo: RegistrationInfo)(implicit request: Request[AnyContent]) = {
+    val email = registrationInfo.email.toLowerCase
+    // check if there is already an account for this email address
+    env.userService.findByEmailAndProvider(email, UsernamePasswordProvider.UsernamePassword).map {
+      maybeUser =>
+        maybeUser match {
+          case Some(user) =>
+            // user signed up already, send an email offering to login/recover password
+            env.mailer.sendAlreadyRegisteredEmail(user)
+          case None =>
+            createToken(registrationInfo, isSignUp = true).flatMap { token =>
+              val savedToken = env.userService.saveToken(token)
+              env.mailer.sendSignUpEmail(email, token.uuid)
+              savedToken
+            }
+        }
+        handleStartResult().flashing(Success -> Messages(ThankYouCheckEmail), Email -> email)
     }
   }
 
@@ -231,4 +241,4 @@ object BaseRegistration {
 /**
  * The data collected during the registration process
  */
-case class RegistrationInfo(userName: Option[String], firstName: String, lastName: String, password: String, email: String)
+case class RegistrationInfo(userName: Option[String], firstName: String, lastName: String, password: String, email: String, checkGetInfo: Boolean, checkAgreement: Boolean)
