@@ -137,8 +137,17 @@ object UsernamePasswordProvider {
  * @param expirationTime the expiration time
  * @param isSignUp a boolean indicating wether the token was created for a sign up action or not
  */
-case class MailToken(uuid: String, email: String,
-    creationTime: DateTime, expirationTime: DateTime, isSignUp: Boolean, firstName: Option[String] = None, lastName: Option[String] = None,
-    password: Option[String] = None, userName: Option[String] = None) {
+case class MailToken(uuid: String,
+                     email: String,
+                     creationTime: DateTime,
+                     expirationTime: DateTime,
+                     isSignUp: Boolean,
+                     firstName: Option[String] = None,
+                     lastName: Option[String] = None,
+                     password: Option[String] = None,
+                     userName: Option[String] = None,
+                     acceptTermsAndConditions: Option[Boolean] = None,
+                     acceptPrivacyPolicy: Option[Boolean] = None) {
+
   def isExpired = expirationTime.isBeforeNow
 }

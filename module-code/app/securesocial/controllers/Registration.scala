@@ -187,7 +187,8 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
               Some(t.email),
               None,
               AuthenticationMethod.UserPassword,
-              passwordInfo = t.password.map(pw => env.currentHasher.hash(pw))
+              passwordInfo = t.password.map(pw => env.currentHasher.hash(pw)),
+              userAgreement = Some(UserAgreement(t.acceptTermsAndConditions, t.acceptPrivacyPolicy))
             )
 
             val withAvatar = env.avatarService.map {
