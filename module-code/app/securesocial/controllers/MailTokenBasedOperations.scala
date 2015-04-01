@@ -61,9 +61,7 @@ abstract class MailTokenBasedOperations[U] extends SecureSocial[U] {
       now,
       now.plusMinutes(TokenDuration),
       isSignUp = isSignUp,
-      firstName = Some(registrationInfo.firstName),
-      lastName = Some(registrationInfo.lastName),
-      password = Some(registrationInfo.password),
+      registrationInfo = Some(registrationInfo),
       userName = registrationInfo.userName
     ))
   }

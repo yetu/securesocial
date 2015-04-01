@@ -21,7 +21,7 @@ import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
-import securesocial.controllers.ViewTemplates
+import securesocial.controllers.{RegistrationInfo, ViewTemplates}
 import securesocial.core.AuthenticationResult.{ Authenticated, NavigationFlow }
 import securesocial.core._
 import securesocial.core.providers.utils.PasswordHasher
@@ -142,12 +142,8 @@ case class MailToken(uuid: String,
                      creationTime: DateTime,
                      expirationTime: DateTime,
                      isSignUp: Boolean,
-                     firstName: Option[String] = None,
-                     lastName: Option[String] = None,
-                     password: Option[String] = None,
                      userName: Option[String] = None,
-                     acceptTermsAndConditions: Option[Boolean] = None,
-                     acceptPrivacyPolicy: Option[Boolean] = None) {
+                     registrationInfo: Option[RegistrationInfo] = None) {
 
   def isExpired = expirationTime.isBeforeNow
 }

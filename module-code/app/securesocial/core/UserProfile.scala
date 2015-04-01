@@ -17,6 +17,7 @@
 package securesocial.core
 
 import org.joda.time.DateTime
+import securesocial.controllers.UserAgreement
 
 /**
  * A minimal user profile
@@ -41,8 +42,11 @@ trait GenericProfile extends UserProfile {
   def passwordInfo: Option[PasswordInfo]
 }
 
-/**
+
+/*
  * An implementation of the GenericProfile
+ * TODO: make the userservice parameterized so overriding BasicProfile is not necessary
+ * TODO: specifically, userAgreement is non-default.
  */
 case class BasicProfile(
   providerId: String,
@@ -58,12 +62,6 @@ case class BasicProfile(
   passwordInfo: Option[PasswordInfo] = None,
   userAgreement: Option[UserAgreement] = None) extends GenericProfile
 
-/*
- * TODO: make the userservice parameterized so overriding BasicProfile is not necessary
- */
-case class UserAgreement(acceptTermsAndConditions: Option[Boolean],
-                         acceptPrivacyPolicy: Option[Boolean],
-                         acceptanceDate: DateTime = DateTime.now())
 
 /**
  * The OAuth 1 details

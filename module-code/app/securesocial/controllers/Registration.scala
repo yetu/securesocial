@@ -16,6 +16,7 @@
  */
 package securesocial.controllers
 
+import org.joda.time.DateTime
 import play.api.data.Forms._
 import play.api.data._
 import play.api.data.validation.Constraints._
@@ -76,8 +77,8 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
     ) // binding
     ((userName, firstName, lastName, password, email, checkGetInfo, checkAgreement) => RegistrationInfo(Some(userName), firstName, lastName, password
         ._1,
-        email, checkGetInfo, checkAgreement)) // unbinding
-        (info => Some((info.userName.getOrElse(""), info.firstName, info.lastName, ("", ""), info.email, info.checkGetInfo, info.checkAgreement)))
+        email, checkGetInfo, UserAgreement(checkAgreement))) // unbinding
+        (info => Some((info.userName.getOrElse(""), info.firstName, info.lastName, ("", ""), info.email, info.newsletterSubscription, info.userAgreement.acceptTermsAndConditions)))
   )
 
   val formWithoutUsername = Form[RegistrationInfo](
@@ -93,9 +94,9 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
       CheckNewsletter -> boolean,
       CheckAgreement -> boolean
     ) // binding
-    ((firstName, lastName, password, email, checkGetInfo, checkAgreement) => RegistrationInfo(None, firstName, lastName, password._1, email, checkGetInfo, checkAgreement)) //
+    ((firstName, lastName, password, email, checkGetInfo, checkAgreement) => RegistrationInfo(None, firstName, lastName, password._1, email, checkGetInfo, UserAgreement(checkAgreement))) //
     // unbinding
-    (info => Some((info.firstName, info.lastName, ("", ""), info.email, info.checkGetInfo, info.checkAgreement)))
+    (info => Some((info.firstName, info.lastName, ("", ""), info.email, info.newsletterSubscription, info.userAgreement.acceptTermsAndConditions)))
   )
 
   val form = if (UsernamePasswordProvider.withUserNameSupport) formWithUsername else formWithoutUsername
@@ -181,14 +182,14 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
             val newUser = BasicProfile(
               providerId,
               id,
-              t.firstName,
-              t.lastName,
-              Some("%s %s".format(t.firstName, t.lastName)),
-              Some(t.email),
-              None,
-              AuthenticationMethod.UserPassword,
-              passwordInfo = t.password.map(pw => env.currentHasher.hash(pw)),
-              userAgreement = Some(UserAgreement(t.acceptTermsAndConditions, t.acceptPrivacyPolicy))
+              firstName = t.registrationInfo.map(info => info.firstName),
+              lastName = t.registrationInfo.map(info => info.lastName),
+              fullName = t.registrationInfo.map(info => "%s %s".format(info.firstName, info.lastName)),
+              email = Some(t.email),
+              avatarUrl = None,
+              authMethod = AuthenticationMethod.UserPassword,
+              passwordInfo = t.registrationInfo.map(info => env.currentHasher.hash(info.password)),
+              userAgreement = t.registrationInfo.map(info => info.userAgreement)
             )
 
             val withAvatar = env.avatarService.map {
@@ -239,7 +240,16 @@ object BaseRegistration {
   val PasswordsDoNotMatch = "securesocial.signup.passwordsDoNotMatch"
 }
 
+case class UserAgreement(acceptTermsAndConditions: Boolean,
+                         acceptTermsAndConditionsDate: DateTime = DateTime.now())
 /**
  * The data collected during the registration process
  */
-case class RegistrationInfo(userName: Option[String], firstName: String, lastName: String, password: String, email: String, checkGetInfo: Boolean, checkAgreement: Boolean)
+case class RegistrationInfo(userName: Option[String],
+                            firstName: String,
+                            lastName: String,
+                            password: String,
+                            email: String,
+                            newsletterSubscription: Boolean,
+                            userAgreement: UserAgreement
+                            )
