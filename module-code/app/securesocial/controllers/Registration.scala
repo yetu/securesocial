@@ -73,7 +73,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
         ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
       Email -> email.verifying(nonEmpty),
         CheckNewsletter -> boolean,
-      CheckAcceptTermsAndConditions -> boolean
+      CheckAcceptTermsAndConditions -> checked("securesocial.signup.error.invalidTermsAndConditions")
     ) // binding
     ((userName, firstName, lastName, password, email, checkGetInfo, checkAgreement) => RegistrationInfo(Some(userName), firstName, lastName, password
         ._1,
@@ -92,7 +92,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
         ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
       Email -> email.verifying(nonEmpty),
       CheckNewsletter -> boolean,
-      CheckAcceptTermsAndConditions -> boolean
+      CheckAcceptTermsAndConditions -> checked("securesocial.signup.error.invalidTermsAndConditions")
     ) // binding
     ((firstName, lastName, password, email, checkGetInfo, checkAgreement) => RegistrationInfo(None, firstName, lastName, password._1, email, checkGetInfo, UserAgreement(checkAgreement))) //
     // unbinding

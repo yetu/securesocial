@@ -30,6 +30,7 @@ securesocial.signup.thankYouCheckEmail=Vielen Dank. Bitte prüfen Sie ihr E-Mail
 securesocial.signup.invalidLink=Der Link ist ungültig
 securesocial.signup.signUpDone=Vielen Dank für Ihre Registrierung. Sie können sich nun anmelden.
 securesocial.signup.invalidPassword=Geben Sie mindestens {0} Zeichen ein
+securesocial.signup.error.invalidTermsAndConditions=Sie müssen den Nutzungsbestimmungen zustimmen
 
 # Password reset
 securesocial.password.title=Passwort zurücksetzen
