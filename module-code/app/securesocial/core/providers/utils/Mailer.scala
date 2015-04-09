@@ -28,7 +28,7 @@ import securesocial.core.BasicProfile
  */
 trait Mailer {
   def sendAlreadyRegisteredEmail(user: BasicProfile)(implicit request: RequestHeader, lang: Lang)
-  def sendSignUpEmail(to: String, token: String)(implicit request: RequestHeader, lang: Lang)
+  def sendSignUpEmail(to: String, token: String, confirmationUrl: Option[String] = None)(implicit request: RequestHeader, lang: Lang)
   def sendWelcomeEmail(user: BasicProfile)(implicit request: RequestHeader, lang: Lang)
   def sendPasswordResetEmail(user: BasicProfile, token: String)(implicit request: RequestHeader, lang: Lang)
   def sendUnkownEmailNotice(email: String)(implicit request: RequestHeader, lang: Lang)
@@ -59,8 +59,8 @@ object Mailer {
 
     }
 
-    override def sendSignUpEmail(to: String, token: String)(implicit request: RequestHeader, lang: Lang) {
-      val txtAndHtml = mailTemplates.getSignUpEmail(token)
+    override def sendSignUpEmail(to: String, token: String, confirmationUrl: Option[String] = None)(implicit request: RequestHeader, lang: Lang) {
+      val txtAndHtml = mailTemplates.getSignUpEmail(token, confirmationUrl)
       sendEmail(Messages(SignUpEmailSubject), to, txtAndHtml)
     }
 

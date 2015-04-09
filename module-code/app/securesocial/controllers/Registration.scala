@@ -22,7 +22,7 @@ import play.api.data._
 import play.api.data.validation.Constraints._
 import play.api.i18n.Messages
 import play.filters.csrf._
-import play.api.mvc.{ AnyContent, Request, Action }
+import play.api.mvc._
 import securesocial.core._
 import securesocial.core.authenticator.CookieAuthenticator
 import securesocial.core.providers.UsernamePasswordProvider
@@ -217,13 +217,16 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
                   Future.successful(confirmationResult().flashing(Error -> Messages("There was an error signing you up")))
                 }
               } else {
-//                TODO: handle gatewayRegistration parameter dynamically!
-                Future.successful(confirmationResult(gatewayRegistration = true).flashing(Success -> Messages(SignUpDone)).withSession(eventSession))
+                  handleSignUpSuccess(eventSession)
               }
             }
             result.flatMap(f => f)
         })
     }
+  }
+
+  def handleSignUpSuccess(eventSession:Session)(implicit request: Request[AnyContent]) : Future[Result] = {
+    Future.successful(confirmationResult(gatewayRegistration = true).flashing(Success -> Messages(SignUpDone)).withSession(eventSession))
   }
 }
 

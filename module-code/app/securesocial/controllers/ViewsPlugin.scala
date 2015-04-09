@@ -84,7 +84,7 @@ trait MailTemplates {
    * @param request the current http request
    * @return a String with the text and/or html body for the email
    */
-  def getSignUpEmail(token: String)(implicit request: RequestHeader, lang: Lang): (Option[Txt], Option[Html])
+  def getSignUpEmail(token: String, confirmationUrl: Option[String] = None)(implicit request: RequestHeader, lang: Lang): (Option[Txt], Option[Html])
 
   /**
    * Returns the email sent when the user is already registered
@@ -182,8 +182,8 @@ object MailTemplates {
    */
   class Default(env: RuntimeEnvironment[_]) extends MailTemplates {
     implicit val implicitEnv = env
-    def getSignUpEmail(token: String)(implicit request: RequestHeader, lang: Lang): (Option[Txt], Option[Html]) = {
-      (None, Some(securesocial.views.html.mails.signUpEmail(token)))
+    def getSignUpEmail(token: String, confirmationUrl: Option[String] = None)(implicit request: RequestHeader, lang: Lang): (Option[Txt], Option[Html]) = {
+      (None, Some(securesocial.views.html.mails.signUpEmail(token, confirmationUrl)))
     }
 
     def getAlreadyRegisteredEmail(user: BasicProfile)(implicit request: RequestHeader, lang: Lang): (Option[Txt], Option[Html]) = {
