@@ -101,6 +101,13 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
 
   val form = if (UsernamePasswordProvider.withUserNameSupport) formWithUsername else formWithoutUsername
 
+  def trimWhitespaceFromEmail(data: Map[String, Seq[String]]): Map[String, Seq[String]] = {
+    data.map{
+      case (Email, values) => (Email, values.map(_.trim))
+      case (key, values)   => (key, values)
+    }
+  }
+
   /**
    * Starts the sign up process
    */
@@ -122,9 +129,11 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
   }
 
   def handleStartSignUp = CSRFCheck {
-    Action.async {
+    Action.async(parse.urlFormEncoded) {
       implicit request =>
-        form.bindFromRequest.fold(
+        val incomingData = request.body
+        val cleanData = trimWhitespaceFromEmail(incomingData)
+        form.bindFromRequest(cleanData).fold(
           errors => {
             Future.successful(BadRequest(env.viewTemplates.getStartSignUpPage(errors)))
           },
@@ -135,7 +144,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
     }
   }
 
-  def handleStartSignUpSuccess(registrationInfo: RegistrationInfo)(implicit request: Request[AnyContent]) = {
+  def handleStartSignUpSuccess(registrationInfo: RegistrationInfo)(implicit request: Request[Map[String, Seq[String]]]) = {
     val email = registrationInfo.email.toLowerCase
     // check if there is already an account for this email address
     env.userService.findByEmailAndProvider(email, UsernamePasswordProvider.UsernamePassword).map {
