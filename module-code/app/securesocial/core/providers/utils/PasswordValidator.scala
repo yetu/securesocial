@@ -29,7 +29,7 @@ trait PasswordValidator {
    * @param password the supplied password
    * @return Right if the password is valid or Left with an error message otherwise
    */
-  def validate(password: String): Either[(String, Seq[Any]), Unit]
+  def validate(password: String): Either[String, Unit]
 }
 
 object PasswordValidator {
@@ -42,7 +42,7 @@ object PasswordValidator {
   def constraint(implicit env: RuntimeEnvironment[_]) = Constraint[String] { s: String =>
     env.passwordValidator.validate(s) match {
       case Right(_) => Valid
-      case Left(error) => Invalid(error._1, error._2: _*)
+      case Left(error) => Invalid(error)
     }
   }
 
@@ -58,11 +58,11 @@ object PasswordValidator {
       app.configuration.getInt(Default.PasswordLengthProperty).getOrElse(Default.Length)
     })
 
-    override def validate(password: String): Either[(String, Seq[Any]), Unit] = {
+    override def validate(password: String): Either[String, Unit] = {
       if (password.length >= requiredLength) {
         Right(())
       } else
-        Left((Default.InvalidPasswordMessage, Seq(requiredLength)))
+        Left(Default.InvalidPasswordMessage)
     }
   }
 
