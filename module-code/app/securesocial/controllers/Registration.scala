@@ -87,7 +87,7 @@ trait BaseRegistration[U] extends MailTokenBasedOperations[U] {
       LastName -> nonEmptyText,
       Password ->
         tuple(
-          Password1 -> nonEmptyText.verifying(PasswordValidator.constraint),
+          Password1 -> text.verifying(PasswordValidator.constraint),
           Password2 -> nonEmptyText
         ).verifying(Messages(PasswordsDoNotMatch), passwords => passwords._1 == passwords._2),
       Email -> email.verifying(nonEmpty),
